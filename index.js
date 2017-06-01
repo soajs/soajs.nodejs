@@ -47,7 +47,7 @@ module.exports = function (configuration) {
             };
         }
         if(input.device)
-            output.device = input.device || {};
+            output.device = input.device || '';
         if(input.geo)
             output.geo = input.geo || {};
         if(input.urac)
