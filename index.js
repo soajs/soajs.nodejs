@@ -52,6 +52,23 @@ module.exports = function (configuration) {
             output.geo = input.geo || {};
         if(input.urac)
             output.urac = input.urac || null;
+	
+	    if(input.awareness){
+		    if(!req.soajs.awareness){
+			    req.soajs.awareness = {
+				    getHost : function(service, cb){
+					    var host = input.awareness.host + ":" + input.awareness.port + "/";
+					
+					    if(service && service.toLowerCase() !== 'controller'){
+						    host += service;
+					    }
+					
+					    return cb(host);
+				    }
+			    };
+		    }
+	    }
+        
         return output;
     }
 
