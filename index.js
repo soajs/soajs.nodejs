@@ -54,19 +54,22 @@ module.exports = function (configuration) {
             output.urac = input.urac || null;
 	
 	    if(input.awareness){
-		    if(!req.soajs.awareness){
-			    req.soajs.awareness = {
-				    getHost : function(service, cb){
-					    var host = input.awareness.host + ":" + input.awareness.port + "/";
-					
-					    if(service && service.toLowerCase() !== 'controller'){
-						    host += service;
-					    }
-					
-					    return cb(host);
+		    output.awareness = {
+			    getHost : function(){
+			    	var service;
+			    	var cb = arguments[arguments.length -1];
+			    	if(arguments.length > 1){
+			    		service = arguments[0];
 				    }
-			    };
-		    }
+				    var host = input.awareness.host + ":" + input.awareness.port + "/";
+				
+				    if(service && service.toLowerCase() !== 'controller'){
+					    host += service;
+				    }
+				
+				    return cb(host);
+			    }
+		    };
 	    }
         
         return output;
@@ -91,6 +94,7 @@ module.exports = function (configuration) {
             req.soajs.servicesConfig = injectObj.key.config;
             req.soajs.device = injectObj.device;
             req.soajs.geo = injectObj.geo;
+            req.soajs.awareness = injectObj.awareness;
             next();
         }
         else
