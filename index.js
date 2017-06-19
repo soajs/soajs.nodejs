@@ -55,6 +55,8 @@ module.exports = function (configuration) {
 	
 	    if(input.awareness){
 		    output.awareness = {
+		    	host : input.awareness.host || "",
+		    	port : input.awareness.port || "",
 			    getHost : function(){
 				    var serviceName, version, env, cb;
 				    cb = arguments[arguments.length -1];
