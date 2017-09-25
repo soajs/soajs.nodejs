@@ -8,6 +8,31 @@ var autoReloadTimeout = {};
  * @returns {Function}
  */
 module.exports = function (configuration) {
+
+    var regObj = {
+        env: null,
+        serviceName: null,
+
+
+
+        reload: function (cb) {
+            if (regObj.env && regObj.serviceName) {
+                execRegistry({
+                    "envCode": regObj.env,
+                    "serviceName": regObj.serviceName
+
+                }, function (err, reg) {
+                    if (err)
+                        cb(false);
+                    else
+                        cb(true);
+                });
+            }
+            else
+                cb(false);
+        }
+    };
+
     /**
      *
      * @param req
@@ -101,9 +126,13 @@ module.exports = function (configuration) {
         return output;
     }
 
+    /**
+     *
+     * @param param
+     * @param cb
+     */
     function execRegistry(param, cb) {
         var err = null;
-        //TODO: this should not be equal to registry. this should be reg Functions with all the methods. like new reg(env)
         var reg = null;
         if (process.env.SOAJS_REGISTRY_API.indexOf(":") === -1)
             err = new Error('Invalid format for SOAJS_REGISTRY_API [hostname:port]: ' + process.env.SOAJS_REGISTRY_API);
@@ -147,16 +176,20 @@ module.exports = function (configuration) {
                         }
                     }
                 }
-                cb(err, reg);
+
+                regObj.env = param.envCode;
+                regObj.serviceName = param.serviceName;
+
+                cb(err, regObj);
             });
         }
         else
-            cb(err, reg);
+            cb(err, null);
     }
 
     return function (req, res, next) {
         if (!req.soajs)
-            req.soajs = {"error":[]};
+            req.soajs = {"error": []};
         var injectObj = mapInjectedObject(req);
         if (injectObj && injectObj.application && injectObj.application.package && injectObj.key && injectObj.tenant) {
             req.soajs.tenant = injectObj.tenant;
@@ -183,7 +216,7 @@ module.exports = function (configuration) {
                 execRegistry(param, function (err, reg) {
                     req.soajs.reg = reg;
                     if (err)
-                        req.soajs.error.push (err);
+                        req.soajs.error.push(err);
                     next();
 
                 });
@@ -199,7 +232,7 @@ module.exports = function (configuration) {
                 execRegistry(param, function (err, reg) {
                     req.soajs.reg = reg;
                     if (err)
-                        req.soajs.error.push (err);
+                        req.soajs.error.push(err);
                     next();
 
                 });
