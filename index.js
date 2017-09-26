@@ -38,13 +38,15 @@ module.exports = function (configuration) {
 
                 }, function (err) {
                     if (err)
-                        cb(false);
+                        cb(err, false);
                     else
-                        cb(true);
+                        cb(err, true);
                 });
             }
-            else
-                cb(false);
+            else {
+                var err = new Error('Cannot reload registry. Env and serviceName are not set');
+                cb(err, false);
+            }
         }
     };
 
