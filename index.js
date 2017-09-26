@@ -16,6 +16,13 @@ module.exports = function (configuration) {
         env: null,
         serviceName: null,
 
+        getServiceConfig : function(){
+            if (regObj.env && registry_struct[regObj.env]) {
+                return registry_struct[regObj.env].serviceConfig;
+            }
+            return null;
+        },
+
         getServices: function () {
             if (regObj.env && registry_struct[regObj.env]) {
                 return registry_struct[regObj.env].services;
@@ -29,7 +36,7 @@ module.exports = function (configuration) {
                     "envCode": regObj.env,
                     "serviceName": regObj.serviceName
 
-                }, function (err, reg) {
+                }, function (err) {
                     if (err)
                         cb(false);
                     else
@@ -141,7 +148,6 @@ module.exports = function (configuration) {
      */
     function execRegistry(param, cb) {
         var err = null;
-        var reg = null;
         if (process.env.SOAJS_REGISTRY_API.indexOf(":") === -1)
             err = new Error('Invalid format for SOAJS_REGISTRY_API [hostname:port]: ' + process.env.SOAJS_REGISTRY_API);
 
@@ -158,50 +164,51 @@ module.exports = function (configuration) {
                 "json": true
             };
             request(requestOption, function (err, response, body) {
-                if (!err) {
-                    if (body.result) {
-                        reg = body.data;
-                        registry_struct[reg.environment] = reg;
-                        if (reg && reg.serviceConfig.awareness.autoRelaodRegistry) {
-                            var autoReload = function () {
-                                execRegistry(param, function (err, reg) {
-                                    if (reg.serviceConfig.awareness.autoRelaodRegistry) {
-                                        if (!autoReloadTimeout[reg.environment])
-                                            autoReloadTimeout[reg.environment] = {};
-                                        if (autoReloadTimeout[reg.environment].timeout)
-                                            clearTimeout(autoReloadTimeout[reg.environment].timeout);
-                                        autoReloadTimeout[reg.environment].setBy = param.setBy;
-                                        autoReloadTimeout[reg.environment].timeout = setTimeout(autoReload, reg.serviceConfig.awareness.autoRelaodRegistry);
-                                    }
-                                });
-                            };
-                            if (!autoReloadTimeout[reg.environment])
-                                autoReloadTimeout[reg.environment] = {};
-                            if (autoReloadTimeout[reg.environment].timeout)
-                                clearTimeout(autoReloadTimeout[reg.environment].timeout);
-                            autoReloadTimeout[reg.environment].setBy = param.setBy;
-                            autoReloadTimeout[reg.environment].timeout = setTimeout(autoReload, reg.serviceConfig.awareness.autoRelaodRegistry);
-                        }
-                    }
-                }
 
                 regObj.env = param.envCode;
                 regObj.serviceName = param.serviceName;
 
-                cb(err, regObj);
+                if (!err) {
+                    if (body.result && body.data && body.data.environment) {
+                        registry_struct[body.data.environment] = body.data;
+                        var serviceConfig = regObj.getServiceConfig();
+                        if (serviceConfig && serviceConfig.awareness && serviceConfig.awareness.autoRelaodRegistry) {
+                            var autoReload = function () {
+                                execRegistry(param, function (err) {
+                                    if (serviceConfig.awareness.autoRelaodRegistry) {
+                                        if (!autoReloadTimeout[regObj.env])
+                                            autoReloadTimeout[regObj.env] = {};
+                                        if (autoReloadTimeout[regObj.env].timeout)
+                                            clearTimeout(autoReloadTimeout[regObj.env].timeout);
+                                        autoReloadTimeout[regObj.env].setBy = param.setBy;
+                                        autoReloadTimeout[regObj.env].timeout = setTimeout(autoReload, serviceConfig.awareness.autoRelaodRegistry);
+                                    }
+                                });
+                            };
+                            if (!autoReloadTimeout[regObj.env])
+                                autoReloadTimeout[regObj.env] = {};
+                            if (autoReloadTimeout[regObj.env].timeout)
+                                clearTimeout(autoReloadTimeout[regObj.env].timeout);
+                            autoReloadTimeout[regObj.env].setBy = param.setBy;
+                            autoReloadTimeout[regObj.env].timeout = setTimeout(autoReload, serviceConfig.awareness.autoRelaodRegistry);
+                        }
+                    }
+                }
+
+                cb(err);
             });
         }
         else
-            cb(err, null);
+            cb(err);
     }
 
     if (process.env.SOAJS_REGISTRY_API && process.env.SOAJS_ENV) {
         var param = {
             "envCode": process.env.SOAJS_ENV.toLowerCase(),
-            "serviceName": ""
+            "serviceName": configuration.serviceName
 
         };
-        execRegistry(param, function (err, reg) {
+        execRegistry(param, function (err) {
             console.log(regObj.getServices())
         });
     }
