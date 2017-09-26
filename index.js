@@ -1,4 +1,7 @@
 'use strict';
+
+var request = require("request");
+
 var registry_struct = {};
 var autoReloadTimeout = {};
 
@@ -13,7 +16,12 @@ module.exports = function (configuration) {
         env: null,
         serviceName: null,
 
-
+        getServices: function () {
+            if (regObj.env && registry_struct[regObj.env]) {
+                return registry_struct[regObj.env].services;
+            }
+            return null;
+        },
 
         reload: function (cb) {
             if (regObj.env && regObj.serviceName) {
@@ -187,6 +195,17 @@ module.exports = function (configuration) {
             cb(err, null);
     }
 
+    if (process.env.SOAJS_REGISTRY_API && process.env.SOAJS_ENV) {
+        var param = {
+            "envCode": process.env.SOAJS_ENV.toLowerCase(),
+            "serviceName": ""
+
+        };
+        execRegistry(param, function (err, reg) {
+            console.log(regObj.getServices())
+        });
+    }
+
     return function (req, res, next) {
         if (!req.soajs)
             req.soajs = {"error": []};
@@ -207,36 +226,14 @@ module.exports = function (configuration) {
             req.soajs.device = injectObj.device;
             req.soajs.geo = injectObj.geo;
             req.soajs.awareness = injectObj.awareness;
-            if (process.env.SOAJS_REGISTRY_API && process.env.SOAJS_ENV) {
-                var param = {
-                    "envCode": process.env.SOAJS_ENV.toLowerCase(),
-                    "serviceName": req.soajs.serviceName
-
-                };
-                execRegistry(param, function (err, reg) {
-                    req.soajs.reg = reg;
-                    if (err)
-                        req.soajs.error.push(err);
-                    next();
-
-                });
-            }
+            if (process.env.SOAJS_REGISTRY_API && process.env.SOAJS_ENV)
+                req.soajs.reg = regObj;
+            next();
         }
         else {
-            if (process.env.SOAJS_REGISTRY_API && process.env.SOAJS_ENV) {
-                var param = {
-                    "envCode": process.env.SOAJS_ENV.toLowerCase(),
-                    "serviceName": req.soajs.serviceName
-
-                };
-                execRegistry(param, function (err, reg) {
-                    req.soajs.reg = reg;
-                    if (err)
-                        req.soajs.error.push(err);
-                    next();
-
-                });
-            }
+            if (process.env.SOAJS_REGISTRY_API && process.env.SOAJS_ENV)
+                req.soajs.reg = regObj;
+            next();
         }
     };
 };
