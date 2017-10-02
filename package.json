@@ -20,6 +20,8 @@
   "dependencies": {
   },
   "devDependencies": {
-    "soajs.controller": "1.0.*"
+    "soajs.controller": "1.0.*",
+    "shelljs": "0.7.5",
+    "soajs.mongodb.data": "1.0.*"
   }
 }
