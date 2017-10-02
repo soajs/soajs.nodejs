@@ -306,10 +306,9 @@ module.exports = (configuration) => {
 		let param = {
 			"envCode": process.env.SOAJS_ENV.toLowerCase(),
 			"serviceName": configuration.serviceName
-			
 		};
 		execRegistry(param, (err) => {
-			console.log(regObj.getServices());
+			regObj.getServices();
 		});
 	}
 	
