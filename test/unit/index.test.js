@@ -1,5 +1,7 @@
 "use strict";
 var assert = require("assert");
+var shell = require('shelljs');
+var sampleData = require("soajs.mongodb.data/modules/nodejs");
 
 var helper = require("../helper.js");
 
@@ -32,8 +34,19 @@ var res = {};
 
 describe("testing index", function () {
 	
+	before(function (done) {
+			shell.pushd(sampleData.dir);
+			shell.exec("chmod +x " + sampleData.shell, function (code) {
+				assert.equal(code, 0);
+				shell.exec(sampleData.shell, function (code) {
+					assert.equal(code, 0);
+					shell.popd();
+					done();
+				});
+			});
+	});
+	
 	describe("testing index", function () {
-		
 		it("Request with soajs obj", function (done) {
 			process.env.SOAJS_REGISTRY_API = '127.0.0.1:5000';
 			
@@ -172,6 +185,5 @@ describe("testing index", function () {
 				});
 			}, 1000);
 		});
-		
 	});
 });
