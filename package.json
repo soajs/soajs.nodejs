@@ -18,6 +18,7 @@
     "test": "grunt test"
   },
   "dependencies": {
+    "request": "2.81.0"
   },
   "devDependencies": {
     "soajs.controller": "1.0.*",
