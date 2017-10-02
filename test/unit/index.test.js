@@ -1,9 +1,6 @@
 "use strict";
 var assert = require("assert");
 
-var express = require('express');
-var app = express();
-
 var helper = require("../helper.js");
 
 var configuration = {

@@ -20,5 +20,6 @@
   "dependencies": {
   },
   "devDependencies": {
+    "soajs.controller": "1.0.*"
   }
 }
