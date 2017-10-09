@@ -275,7 +275,7 @@ module.exports = (configuration) => {
 						if (serviceConfig && serviceConfig.awareness && serviceConfig.awareness.autoRelaodRegistry) {
 							let autoReload = () => {
 								execRegistry(param, (err) => {
-									cb(err);
+									// cb(err);
 								});
 							};
 							if (!autoReloadTimeout[regObj.env])
