@@ -239,7 +239,7 @@ module.exports = (configuration) => {
 		}
 		
 		return output;
-	}
+	};
 	
 	/**
 	 *
@@ -293,7 +293,7 @@ module.exports = (configuration) => {
 		}
 		else
 			cb(err);
-	}
+	};
 	
 	if (process.env.SOAJS_REGISTRY_API && process.env.SOAJS_ENV) {
 		let param = {
