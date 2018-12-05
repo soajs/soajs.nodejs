@@ -329,7 +329,7 @@ module.exports = (configuration) => {
                 "provision_ACL": configuration.provision_ACL,
                 "oauth": configuration.oauth,
 
-                "ip": "127.0.0.1",
+                "ip": configuration.ip || "127.0.0.1",
             };
             requestOption.body = {
                 "maintenance": configuration.maintenance
