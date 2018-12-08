@@ -308,20 +308,21 @@ module.exports = (configuration) => {
 
         if (process.env.SOAJS_DEPLOY_MANUAL) {
             let requestOption = {
-                "url": "http://" + process.env.SOAJS_REGISTRY_API + "/register?env=" + param.envCode + "&serviceName=" + param.serviceName,
+                "url": "http://" + process.env.SOAJS_REGISTRY_API + "/register",
                 "json": true,
                 "method": "post"
             };
-            requestOption.qs = {
+            requestOption.body = {
                 "name": configuration.serviceName,
+                "type": "service",
+                "mw": true,
+
                 "group": configuration.serviceGroup,
                 "port": configuration.servicePort,
                 "swagger": configuration.swagger,
                 "requestTimeout": configuration.requestTimeout,
                 "requestTimeoutRenewal": configuration.requestTimeoutRenewal,
                 "version": configuration.serviceVersion,
-                "type": "service",
-                "mw": true,
                 "extKeyRequired": configuration.extKeyRequired,
                 "urac": configuration.urac,
                 "urac_Profile": configuration.urac_Profile,
@@ -330,8 +331,7 @@ module.exports = (configuration) => {
                 "oauth": configuration.oauth,
 
                 "ip": configuration.ip || "127.0.0.1",
-            };
-            requestOption.body = {
+
                 "maintenance": configuration.maintenance
             };
             request(requestOption, (err, response, body) => {
