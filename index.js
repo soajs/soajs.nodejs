@@ -10,7 +10,7 @@ let autoReloadTimeout = {};
  * @param configuration
  * @returns {Function}
  */
-module.exports = (configuration) => {
+module.exports = (configuration, callback) => {
 
     let regObj = {
         env: null,
@@ -295,6 +295,42 @@ module.exports = (configuration) => {
             cb(err);
     };
 
+    let middleware = () => {
+        return (req, res, next) => {
+            if (!req.soajs)
+                req.soajs = {"error": []};
+            let injectObj = mapInjectedObject(req);
+            if (injectObj && injectObj.application && injectObj.application.package && injectObj.key && injectObj.tenant) {
+                req.soajs.tenant = injectObj.tenant;
+                req.soajs.tenant.key = {
+                    "iKey": injectObj.key.iKey,
+                    "eKey": injectObj.key.eKey
+                };
+                req.soajs.tenant.application = injectObj.application;
+                if (injectObj.package) {
+                    req.soajs.tenant.application.package_acl = injectObj.package.acl;
+                    req.soajs.tenant.application.package_acl_all_env = injectObj.package.acl_all_env;
+                }
+                req.soajs.urac = injectObj.urac;
+                req.soajs.servicesConfig = injectObj.key.config;
+                req.soajs.device = injectObj.device;
+                req.soajs.geo = injectObj.geo;
+                req.soajs.awareness = injectObj.awareness;
+
+                if (process.env.SOAJS_REGISTRY_API && process.env.SOAJS_ENV) {
+                    req.soajs.reg = regObj;
+                }
+                next();
+            }
+            else {
+                if (process.env.SOAJS_REGISTRY_API && process.env.SOAJS_ENV) {
+                    req.soajs.reg = regObj;
+                }
+                next();
+            }
+        };
+    };
+
     if (process.env.SOAJS_REGISTRY_API && process.env.SOAJS_ENV) {
         let param = {
             "envCode": process.env.SOAJS_ENV.toLowerCase(),
@@ -302,11 +338,19 @@ module.exports = (configuration) => {
         };
         let resume = () => {
             execRegistry(param, (err) => {
-                regObj.getServices();
+                if (typeof callback === 'function') {
+                    if (!err) {
+                        callback(null, regObj);
+                    }
+                    else {
+                        callback(err, null);
+                    }
+                }
             });
+            return middleware();
         };
 
-        if (process.env.SOAJS_DEPLOY_MANUAL) {
+        if (process.env.SOAJS_DEPLOY_MANUAL && process.env.SOAJS_DEPLOY_MANUAL !== "0") {
             let requestOption = {
                 "url": "http://" + process.env.SOAJS_REGISTRY_API + "/register",
                 "json": true,
@@ -335,46 +379,11 @@ module.exports = (configuration) => {
                 "maintenance": configuration.maintenance
             };
             request(requestOption, (err, response, body) => {
-                resume();
             });
         }
-        else {
-            resume();
-        }
+        return resume();
     }
-
-    return (req, res, next) => {
-
-        if (!req.soajs)
-            req.soajs = {"error": []};
-        let injectObj = mapInjectedObject(req);
-        if (injectObj && injectObj.application && injectObj.application.package && injectObj.key && injectObj.tenant) {
-            req.soajs.tenant = injectObj.tenant;
-            req.soajs.tenant.key = {
-                "iKey": injectObj.key.iKey,
-                "eKey": injectObj.key.eKey
-            };
-            req.soajs.tenant.application = injectObj.application;
-            if (injectObj.package) {
-                req.soajs.tenant.application.package_acl = injectObj.package.acl;
-                req.soajs.tenant.application.package_acl_all_env = injectObj.package.acl_all_env;
-            }
-            req.soajs.urac = injectObj.urac;
-            req.soajs.servicesConfig = injectObj.key.config;
-            req.soajs.device = injectObj.device;
-            req.soajs.geo = injectObj.geo;
-            req.soajs.awareness = injectObj.awareness;
-
-            if (process.env.SOAJS_REGISTRY_API && process.env.SOAJS_ENV) {
-                req.soajs.reg = regObj;
-            }
-            next();
-        }
-        else {
-            if (process.env.SOAJS_REGISTRY_API && process.env.SOAJS_ENV) {
-                req.soajs.reg = regObj;
-            }
-            next();
-        }
-    };
+    else {
+        return middleware();
+    }
 };
