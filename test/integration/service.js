@@ -49,7 +49,7 @@ function startServer(callback) {
 						res.send(response);
 					});
 				});
-			})
+			});
 		});
 	});
 	
