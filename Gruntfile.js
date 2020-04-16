@@ -1,19 +1,28 @@
+/**
+ * @license
+ * Copyright SOAJS All Rights Reserved.
+ *
+ * Use of this source code is governed by an Apache license that can be
+ * found in the LICENSE file at the root of this repository
+ */
+
 'use strict';
 
-var fs = require('fs');
-var path = require('path');
 
-var lib = {
+const fs = require('fs');
+const path = require('path');
+
+let lib = {
 	/**
 	 * Function that find the root path where grunt plugins are installed.
 	 *
 	 * @method findRoot
 	 * @return String rootPath
 	 */
-	findRoot: function () {
-		var cwd = process.cwd();
-		var rootPath = cwd;
-		var newRootPath = null;
+	findRoot: () => {
+		let cwd = process.cwd();
+		let rootPath = cwd;
+		let newRootPath = null;
 		while (!fs.existsSync(path.join(process.cwd(), "node_modules/grunt"))) {
 			process.chdir("..");
 			newRootPath = process.cwd();
@@ -32,10 +41,12 @@ var lib = {
 	 * @param grunt {Object} The grunt instance
 	 * @param tasks {Array} Array of tasks as string
 	 */
-	loadTasks: function (grunt, rootPath, tasks) {
-		tasks.forEach(function (name) {
-			if (name === 'grunt-cli') return;
-			var cwd = process.cwd();
+	loadTasks: (grunt, rootPath, tasks) => {
+		tasks.forEach((name) => {
+			if (name === 'grunt-cli') {
+				return;
+			}
+			let cwd = process.cwd();
 			process.chdir(rootPath); // load files from proper root, I don't want to install everything locally per module!
 			grunt.loadNpmTasks(name);
 			process.chdir(cwd);
@@ -43,31 +54,37 @@ var lib = {
 	}
 };
 
-module.exports = function (grunt) {
+module.exports = (grunt) => {
 	//Loading the needed plugins to run the grunt tasks
-	var pluginsRootPath = lib.findRoot();
-	lib.loadTasks(grunt, pluginsRootPath, ['grunt-contrib-jshint', 'grunt-jsdoc', 'grunt-contrib-clean', 'grunt-mocha-test', 'grunt-env'
-		, 'grunt-istanbul', 'grunt-coveralls']);
+	let pluginsRootPath = lib.findRoot();
+	lib.loadTasks(grunt, pluginsRootPath, ['grunt-contrib-jshint', 'grunt-jsdoc', 'grunt-contrib-clean', 'grunt-mocha-test', 'grunt-env', 'grunt-istanbul', 'grunt-coveralls', 'grunt-contrib-copy']);
 	grunt.initConfig({
 		//Defining jshint tasks
 		jshint: {
 			options: {
 				"bitwise": true,
+				"curly": true,
 				"eqeqeq": true,
-				"forin": true,
-				"newcap": true,
-				"noarg": true,
-				"undef": true,
-				"unused": false,
 				"eqnull": true,
-				"laxcomma": true,
-				"loopfunc": true,
-				"sub": true,
-				"supernew": true,
-				"validthis": true,
-				"node": true,
+				"esversion": 6,
+				"forin": true,
+				"latedef": "nofunc",
+				"leanswitch": true,
 				"maxerr": 100,
-				"indent": 2,
+				"noarg": true,
+				"nonbsp": true,
+				"strict": "global",
+				"undef": true,
+				"unused": true,
+				"varstmt": true,
+				
+				//"validthis": true,
+				//"loopfunc": true,
+				//"sub": true,
+				//"supernew": true,
+				
+				"node": true,
+				
 				"globals": {
 					"describe": false,
 					"it": false,
@@ -75,16 +92,16 @@ module.exports = function (grunt) {
 					"beforeEach": false,
 					"after": false,
 					"afterEach": false
-				},
-				ignores: ['test/coverage/**/*.js']
+				}
 			},
 			files: {
-				src: ['**/*.js']
+				src: ['index.js', 'Gruntfile.js', 'test/helper.js', 'test/unit/**/*.js', 'test/integration/**/*.js']
 			},
 			gruntfile: {
 				src: 'Gruntfile.js'
 			}
 		},
+		
 		env: {
 			mochaTest: {
 				APP_DIR_FOR_CODE_COVERAGE: '../',
@@ -112,7 +129,6 @@ module.exports = function (grunt) {
 		
 		instrument: {
 			files: ['index.js'],
-			//files: ['**/*.js'],
 			options: {
 				lazy: false,
 				basePath: 'test/coverage/instrument/'
@@ -140,14 +156,14 @@ module.exports = function (grunt) {
 					reporter: 'spec',
 					timeout: 90000
 				},
-				src: ['test/unit/*.js']
+				src: ['test/unit/index.js']
 			},
 			integration: {
 				options: {
 					reporter: 'spec',
 					timeout: 90000
 				},
-				src: ['test/integration/_server.test.js']
+				src: ['test/integration/index.js']
 			}
 		},
 		
@@ -171,8 +187,10 @@ module.exports = function (grunt) {
 	process.env.SHOW_LOGS = grunt.option('showLogs');
 	grunt.registerTask("default", ['jshint']);
 	grunt.registerTask("integration", ['env:mochaTest', 'mochaTest:integration']);
+	grunt.registerTask("integration-coverage", ['clean', 'env:coverage', 'instrument', 'mochaTest:integration', 'storeCoverage', 'makeReport']);
 	grunt.registerTask("unit", ['env:mochaTest', 'mochaTest:unit']);
-	grunt.registerTask("test", ['clean', 'env:coverage', 'instrument', 'mochaTest:unit', 'mochaTest:integration']);
+	grunt.registerTask("unit-coverage", ['clean', 'env:coverage', 'instrument', 'mochaTest:unit', 'storeCoverage', 'makeReport']);
+	grunt.registerTask("test", ['clean', 'env:coverage', 'instrument', 'mochaTest:unit', 'mochaTest:integration', 'storeCoverage', 'makeReport']);
 	grunt.registerTask("coverage", ['clean', 'env:coverage', 'instrument', 'mochaTest:unit', 'mochaTest:integration', 'storeCoverage', 'makeReport', 'coveralls']);
 	
 };

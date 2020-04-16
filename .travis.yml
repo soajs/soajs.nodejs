@@ -1,26 +1,17 @@
-sudo: required
-
-group: deprecated-2017Q2
-
 language: node_js
 
-node_js: 6.9.5
+node_js: 10
 
-services:
-  - mongodb
+jobs:
+  include:
 
-branches:
-  only:
-    - staging
-    - master
-
-addons:
-  hosts:
-    - localhost
-
-before_script:
-  - npm install -g grunt-cli
-  - sleep 10
-
-script:
-  - grunt coverage
+  - stage: install, check code style and coverage
+    if: tag IS blank
+    addons:
+      hosts:
+      - localhost
+    before_script:
+    - npm install -g grunt-cli
+    script:
+    - if [ "$TRAVIS_BRANCH" != "master" ]; then grunt test; fi
+    - if [ "$TRAVIS_BRANCH" = "master" ]; then grunt coverage; fi

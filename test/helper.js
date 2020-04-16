@@ -1,10 +1,13 @@
-var testConsole = {
-	log: function () {
-		if (process.env.SHOW_LOGS === 'true') {
-			console.log.apply(this, arguments);
-		}
-	}
-};
+
+/**
+ * @license
+ * Copyright SOAJS All Rights Reserved.
+ *
+ * Use of this source code is governed by an Apache license that can be
+ * found in the LICENSE file at the root of this repository
+ */
+
+"use strict";
 
 module.exports = {
 	requireModule: function (path) {
