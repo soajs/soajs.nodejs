@@ -1,7 +1,7 @@
 {
   "name": "soajs.nodejs",
   "description": "SOAJS nodejs middleware",
-  "version": "1.1.0",
+  "version": "2.0.0",
   "author": {
     "name": "soajs team",
     "email": "team@soajs.org"
