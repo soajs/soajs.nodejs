@@ -166,8 +166,18 @@ module.exports = (configuration, callback) => {
 		if (input.tenant) {
 			output.tenant = {
 				id: input.tenant.id,
-				code: input.tenant.code
+				code: input.tenant.code,
+				type: input.tenant.type
 			};
+			if (input.tenant.name) {
+				output.tenant.name = input.tenant.name;
+			}
+			if (input.tenant.main) {
+				output.tenant.main = input.tenant.main;
+			}
+			if (input.tenant.profile) {
+				output.tenant.profile = input.tenant.profile;
+			}
 		}
 		if (input.key) {
 			output.key = {
@@ -293,6 +303,10 @@ module.exports = (configuration, callback) => {
 							}
 							if (req.query && req.query.access_token) {
 								response.headers.access_token = req.query.access_token;
+							} else if (req.headers && req.headers.access_token) {
+								response.headers.access_token = req.headers.access_token;
+							} else if (req.headers && req.headers.Authorization) {
+								response.headers.Authorization = req.headers.Authorization;
 							}
 						}
 						return cb(response);
