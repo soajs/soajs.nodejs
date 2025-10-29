@@ -249,7 +249,7 @@ The middleware includes several performance enhancements:
 
 ## Changelog
 
-### v2.0.2
+### v2.0.3
 - **Breaking Change**: Replaced deprecated `request` package with `axios`
 - Fixed typo: `autoRelaodRegistry` → `autoReloadRegistry`
 - Added JSON.parse error handling for malformed headers
