@@ -26,7 +26,7 @@ function startServer(serverConfig, callback) {
 	}
 	if (!serverConfig.m) {
 		serverConfig.m = {};
-		serverConfig.m.port = 5000;
+		serverConfig.m.port = 5001;
 	}
 	
 	let mReply = {

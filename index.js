@@ -18,7 +18,17 @@ module.exports = (configuration, callback) => {
 	let regObj = {
 		env: null,
 		serviceName: null,
-		
+
+		/**
+		 * stops the auto-reload timer for the registry
+		 */
+		stopAutoReload: () => {
+			if (regObj.env && autoReloadTimeout[regObj.env] && autoReloadTimeout[regObj.env].timeout) {
+				clearTimeout(autoReloadTimeout[regObj.env].timeout);
+				delete autoReloadTimeout[regObj.env];
+			}
+		},
+
 		/**
 		 * returns database object if dbName provided, if not, return all core and tenant meta databases
 		 *
@@ -32,10 +42,7 @@ module.exports = (configuration, callback) => {
 					if (!registry_struct[regObj.env].tenantMetaDB && !registry_struct[regObj.env].coreDB) {
 						return null;
 					} else { // if one of them is undefined, no problem
-						let obj = {};
-						obj = Object.assign(obj, registry_struct[regObj.env].coreDB);
-						obj = Object.assign(obj, registry_struct[regObj.env].tenantMetaDB);
-						return obj;
+						return Object.assign({}, registry_struct[regObj.env].coreDB, registry_struct[regObj.env].tenantMetaDB);
 					}
 				} else {
 					// check in coreDB and in tenantMetaDB
@@ -157,7 +164,11 @@ module.exports = (configuration, callback) => {
 	function mapInjectedObject(req) {
 		let input = req.headers.soajsinjectobj;
 		if (typeof input === 'string') {
-			input = JSON.parse(input);
+			try {
+				input = JSON.parse(input);
+			} catch (e) {
+				return null;
+			}
 		}
 		if (!input) {
 			return null;
@@ -215,6 +226,22 @@ module.exports = (configuration, callback) => {
 				host: input.awareness.host || "",
 				port: input.awareness.port || ""
 			};
+
+			// Build index for interConnect services for faster lookup
+			let interConnectIndex = null;
+			if (input.awareness.interConnect && Array.isArray(input.awareness.interConnect)) {
+				interConnectIndex = {};
+				for (let i = 0; i < input.awareness.interConnect.length; i++) {
+					let serviceObj = input.awareness.interConnect[i];
+					if (serviceObj.name) {
+						if (!interConnectIndex[serviceObj.name]) {
+							interConnectIndex[serviceObj.name] = [];
+						}
+						interConnectIndex[serviceObj.name].push(serviceObj);
+					}
+				}
+			}
+
 			output.awareness.getHost = function () { // fat arrows don't have arguments
 				let host = null;
 				if (!input.awareness.host) {
@@ -272,19 +299,16 @@ module.exports = (configuration, callback) => {
 						break;
 				}
 				response = {};
-				if (process.env.SOAJS_DEPLOY_HA && serviceName && configuration.interConnect && input.awareness.interConnect && Array.isArray(input.awareness.interConnect) && input.awareness.interConnect.length > 0) {
-					for (let i = 0; i < input.awareness.interConnect.length; i++) {
-						let serviceObj = input.awareness.interConnect[i];
-						if (serviceObj.name === serviceName) {
-							if (!version && serviceObj.version === serviceObj.latest) {
-								response.host = serviceObj.host + ":" + serviceObj.port;
-								break;
-							} else {
-								if (version === serviceObj.version) {
-									response.host = serviceObj.host + ":" + serviceObj.port;
-									break;
-								}
-							}
+				if (process.env.SOAJS_DEPLOY_HA && serviceName && configuration.interConnect && interConnectIndex && interConnectIndex[serviceName]) {
+					let services = interConnectIndex[serviceName];
+					for (let i = 0; i < services.length; i++) {
+						let serviceObj = services[i];
+						if (!version && serviceObj.version === serviceObj.latest) {
+							response.host = serviceObj.host + ":" + serviceObj.port;
+							break;
+						} else if (version === serviceObj.version) {
+							response.host = serviceObj.host + ":" + serviceObj.port;
+							break;
 						}
 					}
 					if (response.host) {
@@ -324,26 +348,32 @@ module.exports = (configuration, callback) => {
 			err = new Error('Invalid format for SOAJS_REGISTRY_API [hostname:port]: ' + process.env.SOAJS_REGISTRY_API);
 		}
 		if (!err) {
-			let portFromEnv = process.env.SOAJS_REGISTRY_API.substr(process.env.SOAJS_REGISTRY_API.indexOf(":") + 1);
-			let port = parseInt(portFromEnv);
-			if (isNaN(port)) {
-				err = new Error('port must be integer: [' + portFromEnv + ']');
+			let colonIndex = process.env.SOAJS_REGISTRY_API.indexOf(":");
+			if (colonIndex === -1 || colonIndex === process.env.SOAJS_REGISTRY_API.length - 1) {
+				err = new Error('Invalid format for SOAJS_REGISTRY_API [hostname:port]: ' + process.env.SOAJS_REGISTRY_API);
+			} else {
+				let portFromEnv = process.env.SOAJS_REGISTRY_API.substr(colonIndex + 1);
+				let port = parseInt(portFromEnv);
+				if (isNaN(port) || port <= 0 || port > 65535) {
+					err = new Error('port must be integer between 1-65535: [' + portFromEnv + ']');
+				}
 			}
 		}
 		
 		if (!err) {
 			let requestOption = {
 				"url": "http://" + process.env.SOAJS_REGISTRY_API + "/getRegistry?env=" + param.envCode + "&serviceName=" + param.serviceName,
-				"json": true
+				"json": true,
+				"timeout": 30000
 			};
 			request(requestOption, (err, response, body) => {
-				regObj.env = param.envCode;
-				regObj.serviceName = param.serviceName;
 				if (!err) {
-					if (body.result && body.data && body.data.environment) {
+					regObj.env = param.envCode;
+					regObj.serviceName = param.serviceName;
+					if (body && body.result && body.data && body.data.environment) {
 						registry_struct[body.data.environment] = body.data;
 						let serviceConfig = regObj.getServiceConfig();
-						if (serviceConfig && serviceConfig.awareness && serviceConfig.awareness.autoRelaodRegistry) {
+						if (serviceConfig && serviceConfig.awareness && serviceConfig.awareness.autoReloadRegistry) {
 							let autoReload = () => {
 								execRegistry(param, () => {
 									//cb(err);
@@ -356,8 +386,10 @@ module.exports = (configuration, callback) => {
 								clearTimeout(autoReloadTimeout[regObj.env].timeout);
 							}
 							autoReloadTimeout[regObj.env].setBy = param.setBy;
-							autoReloadTimeout[regObj.env].timeout = setTimeout(autoReload, serviceConfig.awareness.autoRelaodRegistry);
+							autoReloadTimeout[regObj.env].timeout = setTimeout(autoReload, serviceConfig.awareness.autoReloadRegistry);
 						}
+					} else {
+						err = new Error('Invalid registry response format');
 					}
 				}
 				return cb(err);
@@ -425,13 +457,14 @@ module.exports = (configuration, callback) => {
 			let requestOption = {
 				"url": "http://" + process.env.SOAJS_REGISTRY_API + "/register",
 				"json": true,
-				"method": "post"
+				"method": "post",
+				"timeout": 30000
 			};
 			requestOption.body = {
 				"name": configuration.serviceName,
 				"type": "service",
 				"mw": true,
-				
+
 				"group": configuration.serviceGroup,
 				"port": configuration.servicePort,
 				"swagger": configuration.swagger,
@@ -448,12 +481,17 @@ module.exports = (configuration, callback) => {
 				"provision_ACL": configuration.provision_ACL,
 				"oauth": configuration.oauth,
 				"interConnect": configuration.interConnect,
-				
+
 				"ip": configuration.ip || "127.0.0.1",
-				
+
 				"maintenance": configuration.maintenance
 			};
-			request(requestOption, () => {
+			request(requestOption, (err, response, body) => {
+				if (err) {
+					console.error('Failed to register service:', err.message);
+				} else if (response && response.statusCode !== 200) {
+					console.error('Service registration failed with status:', response.statusCode);
+				}
 			});
 		}
 		return resume();

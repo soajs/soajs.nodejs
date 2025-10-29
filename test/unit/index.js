@@ -51,7 +51,7 @@ describe("testing MW", function () {
 	});
 	
 	it("Request with soajs obj", function (done) {
-		process.env.SOAJS_REGISTRY_API = '127.0.0.1:5000';
+		process.env.SOAJS_REGISTRY_API = '127.0.0.1:5001';
 		process.env.SOAJS_DEPLOY_MANUAL = '1';
 		let functionMw = soajsMW(configuration);
 		// Wait for registry to load and object is populated
@@ -69,11 +69,11 @@ describe("testing MW", function () {
 	});
 	
 	it("Request with wrong SOAJS_REGISTRY_API", function (done) {
-		process.env.SOAJS_REGISTRY_API = '127.0.0.1xxx5000';
+		process.env.SOAJS_REGISTRY_API = '127.0.0.1xxx5001';
 		process.env.SOAJS_DEPLOY_MANUAL = '1';
 		soajsMW(configuration, (err, reg) => {
 			assert.ok(err);
-			assert.equal(err.message, "Invalid format for SOAJS_REGISTRY_API [hostname:port]: 127.0.0.1xxx5000");
+			assert.equal(err.message, "Invalid format for SOAJS_REGISTRY_API [hostname:port]: 127.0.0.1xxx5001");
 			assert.equal(reg, null);
 			delete process.env.SOAJS_REGISTRY_API;
 			delete process.env.SOAJS_DEPLOY_MANUAL;
@@ -86,7 +86,7 @@ describe("testing MW", function () {
 		process.env.SOAJS_DEPLOY_MANUAL = '1';
 		soajsMW(configuration, (err, reg) => {
 			assert.ok(err);
-			assert.equal(err.message, "port must be integer: [xxx]");
+			assert.equal(err.message, "port must be integer between 1-65535: [xxx]");
 			assert.equal(reg, null);
 			delete process.env.SOAJS_REGISTRY_API;
 			delete process.env.SOAJS_DEPLOY_MANUAL;
@@ -95,7 +95,7 @@ describe("testing MW", function () {
 	});
 	
 	it("Test all registry methods", function (done) {
-		process.env.SOAJS_REGISTRY_API = '127.0.0.1:5000';
+		process.env.SOAJS_REGISTRY_API = '127.0.0.1:5001';
 		let functionMw = soajsMW(configuration);
 		// Wait for registry to load and object is populated
 		setTimeout(function () {
@@ -134,7 +134,7 @@ describe("testing MW", function () {
 	});
 	
 	it("Test awareness getHost", function (done) {
-		process.env.SOAJS_REGISTRY_API = '127.0.0.1:5000';
+		process.env.SOAJS_REGISTRY_API = '127.0.0.1:5001';
 		let functionMw = soajsMW(configuration);
 		// Wait for registry to load and object is populated
 		setTimeout(function () {

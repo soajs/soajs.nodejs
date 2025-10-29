@@ -19,7 +19,7 @@ describe("starting integration tests", () => {
 	let mock_config = null;
 	
 	before((done) => {
-		process.env.SOAJS_REGISTRY_API = '127.0.0.1:5000';
+		process.env.SOAJS_REGISTRY_API = '127.0.0.1:5001';
 		process.env.SOAJS_DEPLOY_MANUAL = '1';
 		mock.startServer(null, function (_config) {
 			mock_config = _config;

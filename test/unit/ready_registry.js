@@ -57,7 +57,7 @@ module.exports = {
 		"serviceConfig": {
 			"awareness": {
 				"cacheTTL": 3600000,
-				"healthCheckInterval": 5000,
+				"healthCheckInterval": 5001,
 				"autoRelaodRegistry": 1500,
 				"maxLogCount": 5,
 				"autoRegisterService": true

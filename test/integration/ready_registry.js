@@ -57,14 +57,14 @@ module.exports = {
 		"serviceConfig": {
 			"awareness": {
 				"cacheTTL": 3600000,
-				"healthCheckInterval": 5000,
+				"healthCheckInterval": 5001,
 				"autoRelaodRegistry": 1500,
 				"maxLogCount": 5,
 				"autoRegisterService": true
 			},
 			"agent": {"topologyDir": "/opt/soajs/"},
 			"logger": {"src": false, "level": "debug", "formatter": {"levelInString": false, "outputMode": "short"}},
-			"ports": {"controller": 4000, "maintenanceInc": 1000, "randomInc": 100},
+			"ports": {"controller": 4000, "maintenanceInc": 1001, "randomInc": 100},
 			"cookie": {"secret": "this is a secret sentence"},
 			"session": {
 				"name": "soajsID",
