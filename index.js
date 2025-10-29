@@ -486,7 +486,7 @@ module.exports = (configuration, callback) => {
 
 				"maintenance": configuration.maintenance
 			};
-			request(requestOption, (err, response, body) => {
+			request(requestOption, (err, response) => {
 				if (err) {
 					console.error('Failed to register service:', err.message);
 				} else if (response && response.statusCode !== 200) {
