@@ -8,7 +8,7 @@
  * found in the LICENSE file at the root of this repository
  */
 
-const request = require("request");
+const axios = require("axios");
 const assert = require('assert');
 
 describe("starting integration tests", () => {
@@ -34,60 +34,60 @@ describe("starting integration tests", () => {
 	});
 	
 	it("Test injectedObject data population", (done) => {
-		let options = {
-			"uri": "http://127.0.0.1:4381/hello",
-			"headers": data.headers,
-			"json": true
-		};
-		request.get(options, function (error, response, body) {
-			assert.ifError(error);
-			assert.ok(body);
-			assert.equal(body.tenant.id, "5551aca9e179c39b760f7a1a");
-			assert.equal(body.urac._id, "59a538becc083eecf37149df");
+		axios.get("http://127.0.0.1:4381/hello", {
+			headers: data.headers
+		})
+		.then((response) => {
+			assert.ok(response.data);
+			assert.equal(response.data.tenant.id, "5551aca9e179c39b760f7a1a");
+			assert.equal(response.data.urac._id, "59a538becc083eecf37149df");
 			done();
+		})
+		.catch((error) => {
+			done(error);
 		});
 	});
 	it("Test /mix/test", (done) => {
-		let options = {
-			"uri": "http://127.0.0.1:4381/mix/test",
-			"headers": data.headers,
-			"json": true
-		};
-		request.get(options, function (error, response, body) {
-			assert.ifError(error);
-			assert.ok(body);
-			assert.equal(body.controller, "127.0.0.1:4000");
-			assert.equal(body.databases.urac.cluster, "dash_cluster");
+		axios.get("http://127.0.0.1:4381/mix/test", {
+			headers: data.headers
+		})
+		.then((response) => {
+			assert.ok(response.data);
+			assert.equal(response.data.controller, "127.0.0.1:4000");
+			assert.equal(response.data.databases.urac.cluster, "dash_cluster");
 			done();
+		})
+		.catch((error) => {
+			done(error);
 		});
 	});
 	it("Test /connect/tests", (done) => {
 		process.env.SOAJS_DEPLOY_HA = "kubernetes";
-		let options = {
-			"uri": "http://127.0.0.1:4381/connect/tests",
-			"headers": data.headers,
-			"json": true,
-			"qs": data.query
-		};
-		request.get(options, function (error, response, body) {
-			assert.ifError(error);
-			assert.ok(body);
-			
-			assert.equal(body.test1.host, '127.0.0.1:4000/urac/v2');
-			assert.ok(body.test1.headers.key);
-			assert.ok(body.test1.headers.access_token);
-			
-			assert.equal(body.test2.host, '127.0.0.2:4001');
-			assert.ok(body.test2.headers.soajsinjectobj);
-			
-			assert.equal(body.test3.host, '127.0.0.1:4000');
-			assert.ok(body.test3.headers.key);
-			assert.ok(body.test1.headers.access_token);
-			
-			assert.equal(body.test4.host, '127.0.0.2:4001');
-			assert.ok(body.test4.headers.soajsinjectobj);
-			
+		axios.get("http://127.0.0.1:4381/connect/tests", {
+			headers: data.headers,
+			params: data.query
+		})
+		.then((response) => {
+			assert.ok(response.data);
+
+			assert.equal(response.data.test1.host, '127.0.0.1:4000/urac/v2');
+			assert.ok(response.data.test1.headers.key);
+			assert.ok(response.data.test1.headers.access_token);
+
+			assert.equal(response.data.test2.host, '127.0.0.2:4001');
+			assert.ok(response.data.test2.headers.soajsinjectobj);
+
+			assert.equal(response.data.test3.host, '127.0.0.1:4000');
+			assert.ok(response.data.test3.headers.key);
+			assert.ok(response.data.test1.headers.access_token);
+
+			assert.equal(response.data.test4.host, '127.0.0.2:4001');
+			assert.ok(response.data.test4.headers.soajsinjectobj);
+
 			done();
+		})
+		.catch((error) => {
+			done(error);
 		});
 	});
 	

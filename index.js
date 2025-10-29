@@ -7,7 +7,7 @@
  * found in the LICENSE file at the root of this repository
  */
 
-let request = require("request");
+const axios = require("axios");
 
 let registry_struct = {};
 let autoReloadTimeout = {};
@@ -361,37 +361,41 @@ module.exports = (configuration, callback) => {
 		}
 		
 		if (!err) {
-			let requestOption = {
-				"url": "http://" + process.env.SOAJS_REGISTRY_API + "/getRegistry?env=" + param.envCode + "&serviceName=" + param.serviceName,
-				"json": true,
-				"timeout": 30000
-			};
-			request(requestOption, (err, response, body) => {
-				if (!err) {
-					regObj.env = param.envCode;
-					regObj.serviceName = param.serviceName;
-					if (body && body.result && body.data && body.data.environment) {
-						registry_struct[body.data.environment] = body.data;
-						let serviceConfig = regObj.getServiceConfig();
-						if (serviceConfig && serviceConfig.awareness && serviceConfig.awareness.autoReloadRegistry) {
-							let autoReload = () => {
-								execRegistry(param, () => {
-									//cb(err);
-								});
-							};
-							if (!autoReloadTimeout[regObj.env]) {
-								autoReloadTimeout[regObj.env] = {};
-							}
-							if (autoReloadTimeout[regObj.env].timeout) {
-								clearTimeout(autoReloadTimeout[regObj.env].timeout);
-							}
-							autoReloadTimeout[regObj.env].setBy = param.setBy;
-							autoReloadTimeout[regObj.env].timeout = setTimeout(autoReload, serviceConfig.awareness.autoReloadRegistry);
+			axios.get("http://" + process.env.SOAJS_REGISTRY_API + "/getRegistry", {
+				params: {
+					env: param.envCode,
+					serviceName: param.serviceName
+				},
+				timeout: 30000
+			})
+			.then((response) => {
+				regObj.env = param.envCode;
+				regObj.serviceName = param.serviceName;
+				const body = response.data;
+				if (body && body.result && body.data && body.data.environment) {
+					registry_struct[body.data.environment] = body.data;
+					let serviceConfig = regObj.getServiceConfig();
+					if (serviceConfig && serviceConfig.awareness && serviceConfig.awareness.autoReloadRegistry) {
+						let autoReload = () => {
+							execRegistry(param, () => {
+								//cb(err);
+							});
+						};
+						if (!autoReloadTimeout[regObj.env]) {
+							autoReloadTimeout[regObj.env] = {};
 						}
-					} else {
-						err = new Error('Invalid registry response format');
+						if (autoReloadTimeout[regObj.env].timeout) {
+							clearTimeout(autoReloadTimeout[regObj.env].timeout);
+						}
+						autoReloadTimeout[regObj.env].setBy = param.setBy;
+						autoReloadTimeout[regObj.env].timeout = setTimeout(autoReload, serviceConfig.awareness.autoReloadRegistry);
 					}
+					return cb(null);
+				} else {
+					return cb(new Error('Invalid registry response format'));
 				}
+			})
+			.catch((err) => {
 				return cb(err);
 			});
 		} else {
@@ -454,13 +458,7 @@ module.exports = (configuration, callback) => {
 		};
 		
 		if (process.env.SOAJS_DEPLOY_MANUAL && process.env.SOAJS_DEPLOY_MANUAL !== "0") {
-			let requestOption = {
-				"url": "http://" + process.env.SOAJS_REGISTRY_API + "/register",
-				"json": true,
-				"method": "post",
-				"timeout": 30000
-			};
-			requestOption.body = {
+			axios.post("http://" + process.env.SOAJS_REGISTRY_API + "/register", {
 				"name": configuration.serviceName,
 				"type": "service",
 				"mw": true,
@@ -485,12 +483,17 @@ module.exports = (configuration, callback) => {
 				"ip": configuration.ip || "127.0.0.1",
 
 				"maintenance": configuration.maintenance
-			};
-			request(requestOption, (err, response) => {
-				if (err) {
+			}, {
+				timeout: 30000
+			})
+			.then(() => {
+				// Success - service registered
+			})
+			.catch((err) => {
+				if (err.response) {
+					console.error('Service registration failed with status:', err.response.status);
+				} else {
 					console.error('Failed to register service:', err.message);
-				} else if (response && response.statusCode !== 200) {
-					console.error('Service registration failed with status:', response.statusCode);
 				}
 			});
 		}

@@ -126,13 +126,15 @@ app.get('/call-service', function(req, res){
         // response.host contains the service URL
         // response.headers contains necessary auth headers
 
-        const request = require('request');
-        request({
-            url: response.host + '/endpoint',
-            headers: response.headers,
-            json: true
-        }, (err, httpResponse, body) => {
-            res.json(body);
+        const axios = require('axios');
+        axios.get(response.host + '/endpoint', {
+            headers: response.headers
+        })
+        .then((httpResponse) => {
+            res.json(httpResponse.data);
+        })
+        .catch((err) => {
+            res.status(500).json({ error: err.message });
         });
     });
 });
@@ -195,14 +197,25 @@ Manually reload the registry. Callback receives `(err, success)`.
 #### stopAutoReload()
 Stops the automatic registry reload timer.
 
-## Error Handling
+## Technical Details
 
-The middleware includes robust error handling:
+### HTTP Client
+
+The middleware uses **axios** (v1.13.1) for all HTTP requests, providing:
+- Promise-based API for modern async/await patterns
+- Automatic JSON parsing
+- 30-second timeout for all requests
+- Robust error handling
+
+### Error Handling
+
+The middleware includes comprehensive error handling:
 
 - JSON parsing errors are caught and handled gracefully
-- HTTP requests have 30-second timeouts
-- Registry API validation with proper error messages
-- Service registration failures are logged
+- HTTP requests have 30-second timeouts to prevent hanging
+- Registry API validation with detailed error messages
+- Service registration failures are logged with status codes
+- Port validation ensures values are between 1-65535
 
 ```javascript
 app.use(soajsMW(config, (err, regObj) => {
@@ -225,6 +238,28 @@ https://github.com/soajs/soajs.nodejs.hapi
 ## License
 
 Apache-2.0
+
+## Performance Optimizations
+
+The middleware includes several performance enhancements:
+
+- **InterConnect Service Indexing**: Services are indexed by name for O(1) lookup instead of O(n) iteration
+- **Efficient Object Merging**: Single Object.assign operation for database merging
+- **Cleanup Mechanisms**: `stopAutoReload()` method prevents memory leaks from auto-reload timers
+
+## Changelog
+
+### v2.0.2
+- **Breaking Change**: Replaced deprecated `request` package with `axios`
+- Fixed typo: `autoRelaodRegistry` → `autoReloadRegistry`
+- Added JSON.parse error handling for malformed headers
+- Improved port validation (1-65535 range)
+- Added request timeouts (30 seconds) to prevent hanging
+- Added `stopAutoReload()` method for proper cleanup
+- Optimized interConnect array iteration with indexing
+- Enhanced error logging for service registration
+- Updated all tests to use axios
+- Improved README documentation
 
 ## Support
 
