@@ -1,0 +1,12 @@
+{
+  "openapi": "3.0.3",
+  "info": {"title": "express demo", "version": "1.0.0"},
+  "paths": {
+    "/hello": {
+      "get": {
+        "summary": "Returns the soajs object",
+        "tags": ["demo"]
+      }
+    }
+  }
+}

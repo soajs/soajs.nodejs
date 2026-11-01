@@ -8,9 +8,81 @@
  */
 
 const axios = require("axios");
+const fs = require("fs");
+const path = require("path");
 
 let registry_struct = {};
 let autoReloadTimeout = {};
+
+/**
+ * The Swagger / OpenAPI document of the service, for GET /mcp/tools.
+ * configuration.swaggerDocument (an object, e.g. from swagger-jsdoc) wins; otherwise the file
+ * configuration.swaggerFilename (default /swagger.yml), relative to the folder the service runs from,
+ * the same key the repositories service reads. A JSON file is sent parsed, a YAML file as text.
+ */
+function loadSwagger(configuration) {
+	if (configuration.swaggerDocument && typeof configuration.swaggerDocument === 'object') {
+		return configuration.swaggerDocument;
+	}
+	let filename = configuration.swaggerFilename || "/swagger.yml";
+	let file = path.join(process.cwd(), filename);
+	if (!fs.existsSync(file)) {
+		return null;
+	}
+	let content = fs.readFileSync(file, "utf8");
+	if (path.extname(file).toLowerCase() === ".json") {
+		try {
+			return JSON.parse(content);
+		} catch (e) {
+			return null;
+		}
+	}
+	return content;
+}
+
+/**
+ * GET /mcp/tools: the service describes its APIs to the gateway, which turns the document into MCP tools.
+ * Answered only for calls that do not come through the gateway proxy (no soajsinjectobj header):
+ * a client request to /<service>/mcp/tools carries it and goes to the app like any other request.
+ */
+function mcpToolsHandler(configuration) {
+	let swagger;
+	return (req, res) => {
+		if (swagger === undefined) {
+			swagger = loadSwagger(configuration);
+		}
+		let data = {
+			"name": configuration.serviceName,
+			"version": "" + (configuration.serviceVersion || 1)
+		};
+		if (swagger) {
+			data.swagger = swagger;
+		} else {
+			data.tools = [];
+		}
+		let body = JSON.stringify({
+			"result": true,
+			"ts": Date.now(),
+			"service": {
+				"service": (configuration.serviceName || "").toUpperCase(),
+				"type": "rest",
+				"route": "/mcp/tools"
+			},
+			"data": data
+		});
+		res.statusCode = 200;
+		res.setHeader("Content-Type", "application/json");
+		res.end(body);
+	};
+}
+
+function isMCPToolsRequest(req) {
+	if (req.method !== "GET" || (req.headers && req.headers.soajsinjectobj)) {
+		return false;
+	}
+	let url = req.path || (req.url || "").split("?")[0];
+	return url === "/mcp/tools";
+}
 
 
 module.exports = (configuration, callback) => {
@@ -403,8 +475,13 @@ module.exports = (configuration, callback) => {
 		}
 	}
 	
+	let mcpTools = mcpToolsHandler(configuration);
+
 	function middleware() {
 		return (req, res, next) => {
+			if (isMCPToolsRequest(req)) {
+				return mcpTools(req, res);
+			}
 			if (!req.soajs) {
 				req.soajs = {"error": []};
 			}
@@ -502,3 +579,9 @@ module.exports = (configuration, callback) => {
 		return middleware();
 	}
 };
+
+/**
+ * The GET /mcp/tools handler on its own, for an app that mounts its routes itself:
+ * app.get("/mcp/tools", soajs.mcpTools(configuration))
+ */
+module.exports.mcpTools = mcpToolsHandler;

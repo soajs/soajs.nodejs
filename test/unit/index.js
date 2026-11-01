@@ -164,3 +164,4 @@ describe("testing MW", function () {
 		});
 	});
 });
+require("./mcp.js");

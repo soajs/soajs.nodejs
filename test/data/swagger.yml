@@ -1,0 +1,13 @@
+swagger: "2.0"
+info:
+  version: "1.0.0"
+  title: express demo
+paths:
+  /hello:
+    get:
+      summary: Hello World
+      parameters:
+        - name: username
+          in: query
+          required: true
+          type: string
