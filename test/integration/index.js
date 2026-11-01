@@ -91,6 +91,32 @@ describe("starting integration tests", () => {
 		});
 	});
 	
+	it("Test GET /mcp/tools from the gateway", (done) => {
+		axios.get("http://127.0.0.1:4381/mcp/tools")
+		.then((response) => {
+			assert.equal(response.data.result, true);
+			assert.equal(response.data.data.name, "express");
+			assert.equal(response.data.data.version, "1");
+			assert.deepEqual(response.data.data.swagger, require("./swagger.json"));
+			done();
+		})
+		.catch((error) => {
+			done(error);
+		});
+	});
+	it("Test GET /mcp/tools through the gateway proxy goes to the app", (done) => {
+		axios.get("http://127.0.0.1:4381/mcp/tools", {
+			headers: {"soajsinjectobj": data.headers.soajsinjectobj}
+		})
+		.then(() => {
+			done(new Error("the app has no /mcp/tools route, it should answer 404"));
+		})
+		.catch((error) => {
+			assert.equal(error.response.status, 404);
+			done();
+		});
+	});
+	
 	after(function (done) {
 		delete process.env.SOAJS_REGISTRY_API;
 		delete process.env.SOAJS_DEPLOY_MANUAL;

@@ -36,5 +36,5 @@
     },
     "readiness": "/heartbeat"
   },
-  "swaggerFilename": "/swagger.json"
+  "swaggerFilename": "/test/integration/swagger.json"
 }

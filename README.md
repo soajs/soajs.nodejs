@@ -152,6 +152,26 @@ Configure automatic registry reloading in your service configuration:
 }
 ```
 
+### MCP Tools (GET /mcp/tools)
+
+The SOAJS gateway can list a service's APIs as MCP tools for AI agents, filtered by each tenant's
+package and each user's ACL. A service built with this middleware describes its APIs with its
+Swagger 2.0 or OpenAPI 3 document; the middleware serves it on `GET /mcp/tools` and the gateway
+turns it into tools.
+
+```javascript
+{
+    "swaggerFilename": "/swagger.yml"   // default; relative to the folder the service runs from
+}
+```
+
+- A `.json` file is sent parsed, any other file (YAML) as text.
+- `swaggerDocument` (an object, for example from swagger-jsdoc) is used in place of the file.
+- No document, or an invalid JSON file: the answer has `"tools": []`, the service has no tools.
+- Only the gateway's own call is answered. A client request to `/<service>/mcp/tools` comes through
+  the gateway with the `soajsinjectobj` header and goes to your app like any other request.
+- If your app mounts its routes itself: `app.get("/mcp/tools", soajsMW.mcpTools(config))`.
+
 ## API Reference
 
 ### req.soajs Object
@@ -248,6 +268,12 @@ The middleware includes several performance enhancements:
 - **Cleanup Mechanisms**: `stopAutoReload()` method prevents memory leaks from auto-reload timers
 
 ## Changelog
+
+### v2.0.4
+- `GET /mcp/tools` serves the service's Swagger / OpenAPI document to the gateway for MCP tools
+- `mcpTools(configuration)` handler for apps that mount their own routes
+- axios 1.20.0
+- CI moved from Travis to GitHub Actions
 
 ### v2.0.3
 - **Breaking Change**: Replaced deprecated `request` package with `axios`
