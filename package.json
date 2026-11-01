@@ -18,11 +18,11 @@
     "test": "grunt test"
   },
   "dependencies": {
-    "axios": "1.13.1"
+    "axios": "1.20.0"
   },
   "devDependencies": {
     "express": "4.17.1",
-    "grunt": "1.6.1",
+    "grunt": "1.6.3",
     "grunt-contrib-clean": "2.0.1",
     "grunt-contrib-copy": "1.0.0",
     "grunt-contrib-jshint": "3.2.0",
@@ -31,6 +31,6 @@
     "grunt-istanbul": "0.8.0",
     "grunt-jsdoc": "2.4.1",
     "grunt-mocha-test": "0.13.3",
-    "mocha": "11.7.4"
+    "mocha": "11.7.5"
   }
 }
